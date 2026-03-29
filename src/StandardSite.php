@@ -7,6 +7,8 @@ namespace Drupal\standard_site;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\atproto_client\Client\AtprotoClient;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\Core\Mail\MailFormatHelper;
 
 /**
  * Service to post blog entries and rides a site.standard.document records
@@ -29,8 +31,11 @@ final class StandardSite {
 	 * Publish a blog post as a site.standard.document record
 	 *
 	 */
-	public function postToStandardSite(NodeInterface $node): mixed {
+	public function postToStandardSite($node): mixed {
 		
+		// Get did from client	
+		$did = $this->atprotoClient->getDid();	
+			
 		// Build the tags array
 		$tags = [];
 		foreach ($node->get('field_tags') as $tagRef) {
@@ -41,7 +46,7 @@ final class StandardSite {
 		// Define a site.standard.document record		 
 	 	$record = [
 			'$type' 		=>  "site.standard.document",
-			'site' 			=>  "at://" . $this->did . "/site.standard.publication/liebs-log",
+			'site' 			=>  "at://" . $did . "/site.standard.publication/liebs-log",
 			'title' 		=>  $node->get('title')->value,
 			'path' 			=>  $node->toUrl()->toString(),
 			'description' 	=>  mb_substr(MailFormatHelper::htmlToText($node->body->value), 0, 3000), // Should use body->summary
@@ -53,7 +58,7 @@ final class StandardSite {
 	 	// Post the record
 	 	try {
 			$response = $this->atprotoClient->putRecord( [            
-				'repo' 		 => $this->did,
+				'repo' 		 => $did,
 				'collection' => 'site.standard.document',
 				'rkey'		 => $node->uuid(),
 				'record' 	 => $record,
@@ -72,7 +77,10 @@ final class StandardSite {
 	 * Publish a ride as a site.standard.document record
 	 *
 	 */
-	public function rideToStandardSite(NodeInterface $node): mixed {
+	public function rideToStandardSite($node): mixed {
+		
+		// Get did from client	
+		$did = $this->atprotoClient->getDid();
 		
 		// Get the bike name
         $bid = $node->field_bike->target_id;
@@ -106,7 +114,7 @@ final class StandardSite {
 		// Outer wreapper is a site.standard.document
 		$record = [
 			'$type' 		=>  "site.standard.document",
-			'site' 			=>  "at://" . $this->did . "/site.standard.publication/liebs-log",
+			'site' 			=>  "at://" . $did . "/site.standard.publication/liebs-log",
 			'title' 		=> "🚲Lieb's Ride Log🚲",
 			'path' 			=>  $node->toUrl()->toString(),
 			'description' 	=>  $description,
@@ -126,7 +134,7 @@ final class StandardSite {
         // Post the record
 	 	try {
 			$response = $this->atprotoClient->putRecord( [            
-				'repo' 		 => $this->did,
+				'repo' 		 => $did,
 				'collection' => 'site.standard.document',
 				'rkey'		 => $node->uuid(),
 				'record' 	 => $record,

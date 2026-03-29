@@ -6,6 +6,7 @@ namespace Drupal\standard_site\Plugin\Action;
 
 use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Action\ActionBase;
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Action\Attribute\Action;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -17,19 +18,6 @@ use Drupal\standard_site\StandardSite;
 /**
  * Provides a Blog Insert Action action.
  *
- * @DCG
- * For updating entity fields consider extending FieldUpdateActionBase.
- * @see \Drupal\Core\Field\FieldUpdateActionBase
- *
- * @DCG
- * In order to set up the action through admin interface the plugin has to be
- * configurable.
- * @see https://www.drupal.org/project/drupal/issues/2815301
- * @see https://www.drupal.org/project/drupal/issues/2815297
- *
- * @DCG
- * The whole action API is subject of change.
- * @see https://www.drupal.org/project/drupal/issues/2011038
  */
 #[Action(
     id: 'standard_site_blog_insert_action',
@@ -63,14 +51,12 @@ final class BlogInsertAction extends ActionBase implements ContainerFactoryPlugi
         );
     }
 
-    /**
+     /**
      * {@inheritdoc}
      */
-    public function access($entity, ?AccountInterface $account = NULL, $return_as_object = FALSE): AccessResultInterface|bool {
-        /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
-        $access = $entity->access('update', $account, TRUE)
-            ->andIf($entity->get('field_example')->access('edit', $account, TRUE));
-        return $return_as_object ? $access : $access->isAllowed();
+    public function access($object, ?AccountInterface $account = NULL, $return_as_object = FALSE) {
+        $result = AccessResult::allowed();
+        return $return_as_object ? $result : $result->isAllowed();
     }
 
     /**
