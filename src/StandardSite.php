@@ -9,6 +9,8 @@ use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\atproto_client\Client\AtprotoClient;
 use Drupal\taxonomy\Entity\Term;
 use Drupal\Core\Mail\MailFormatHelper;
+use Drupal\node\Entity\Node;
+use Drupal\node\NodeInterface;
 
 /**
  * Service to post blog entries and rides a site.standard.document records
@@ -26,24 +28,24 @@ final class StandardSite {
     private readonly AtprotoClient $atprotoClient,
   ) {}
 
- 
+
  	/**
 	 * Publish a blog post as a site.standard.document record
 	 *
 	 */
-	public function postToStandardSite($node): mixed {
-		
-		// Get did from client	
-		$did = $this->atprotoClient->getDid();	
-			
+	public function postToStandardSite(NodeInterface $node): mixed {
+
+		// Get did from client
+		$did = $this->atprotoClient->getDid();
+
 		// Build the tags array
 		$tags = [];
 		foreach ($node->get('field_tags') as $tagRef) {
 			$tid = $tagRef->target_id;
 			$tags[] = Term::load($tid)->getName();
 		}
-	
-		// Define a site.standard.document record		 
+
+		// Define a site.standard.document record
 	 	$record = [
 			'$type' 		=>  "site.standard.document",
 			'site' 			=>  "at://" . $did . "/site.standard.publication/liebs-log",
@@ -52,17 +54,17 @@ final class StandardSite {
 			'description' 	=>  mb_substr(MailFormatHelper::htmlToText($node->body->value), 0, 3000), // Should use body->summary
 			'publishedAt' 	=>  date('c', (int) $node->getCreatedTime()),
 			'tags' 			=>  $tags,
-			'textContent' 	=>  MailFormatHelper::htmlToText($node->body->value),					
+			'textContent' 	=>  MailFormatHelper::htmlToText($node->body->value),
 	 	];
-	 	
+
 	 	// Post the record
 	 	try {
-			$response = $this->atprotoClient->putRecord( [            
+			$response = $this->atprotoClient->putRecord( [
 				'repo' 		 => $did,
 				'collection' => 'site.standard.document',
 				'rkey'		 => $node->uuid(),
 				'record' 	 => $record,
-			]);	 
+			]);
 			$this->logger->notice("Created standard site record for blog post @title", ["@title" => $node->get('title')->value]);
 			return $response;
 		}
@@ -71,17 +73,17 @@ final class StandardSite {
       		return FALSE;
 	 	}
 	 }
-	 	
-	 
+
+
 	/**
 	 * Publish a ride as a site.standard.document record
 	 *
 	 */
-	public function rideToStandardSite($node): mixed {
-		
-		// Get did from client	
+	public function rideToStandardSite(NodeInterface $node): mixed {
+
+		// Get did from client
 		$did = $this->atprotoClient->getDid();
-		
+
 		// Get the bike name
         $bid = $node->field_bike->target_id;
         $bikeName = $bid ? Node::load($bid)->getTitle() : 'Unknown Bike';
@@ -110,7 +112,7 @@ final class StandardSite {
             'url' 		=> $node->toUrl('canonical', ['absolute' => TRUE])->toString(),
             'body' 		=> MailFormatHelper::htmlToText($node->body->value),
         ];
-			
+
 		// Outer wreapper is a site.standard.document
 		$record = [
 			'$type' 		=>  "site.standard.document",
@@ -119,7 +121,7 @@ final class StandardSite {
 			'path' 			=>  $node->toUrl()->toString(),
 			'description' 	=>  $description,
 			'publishedAt' 	=>  date('c', (int) $node->getCreatedTime()),
-			'tags' 			=>  ["bicycle", "bikeride", "bikepacking"],	
+			'tags' 			=>  ["bicycle", "bikeride", "bikepacking"],
 			'coverImage' 	=> [
 				'$type' => "blob",
 				'ref' => [
@@ -133,12 +135,12 @@ final class StandardSite {
 
         // Post the record
 	 	try {
-			$response = $this->atprotoClient->putRecord( [            
+			$response = $this->atprotoClient->putRecord( [
 				'repo' 		 => $did,
 				'collection' => 'site.standard.document',
 				'rkey'		 => $node->uuid(),
 				'record' 	 => $record,
-			]);	 
+			]);
 			$this->logger->notice("Created standard site record for ride  @title", ["@title" => $node->get('title')->value]);
 			return $response;
 		}
