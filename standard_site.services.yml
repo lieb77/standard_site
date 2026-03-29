@@ -1,0 +1,8 @@
+services:
+  logger.channel.standard_site:
+    parent: logger.channel_base
+    arguments: ['standard_site']
+
+  standard_site.service:
+    class: Drupal\standard_site\StandardSite
+    arguments: ['@entity_type.manager', '@logger.channel.standard_site', '@atproto_client.atproto_client']
